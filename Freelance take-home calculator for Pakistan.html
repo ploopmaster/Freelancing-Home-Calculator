@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Freelance take-home calculator for Pakistan</title>
+<meta name="description" content="Paid in dollars, living on rupees? See what you actually keep after platform fees, payout fees, tax and exchange rate.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F2F5F8; --panel:#FFFFFF; --ink:#14213D; --muted:#566677; --line:#D3DCE4;
+  --accent:#E8A100; --accent-ink:#14213D; --fee:#8FA3B5; --pay:#5C7A99; --tax:#2E4A6B; --keep:#E8A100;
+  --focus:#1D5FD1;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1822; --panel:#152331; --ink:#E9EFF4; --muted:#9FB0BF; --line:#2A3B4C;
+    --accent:#F2B21F; --accent-ink:#0E1822; --fee:#6D8296; --pay:#8AA6C2; --tax:#B7CBDE; --keep:#F2B21F;
+    --focus:#7FB0FF; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1822; --panel:#152331; --ink:#E9EFF4; --muted:#9FB0BF; --line:#2A3B4C;
+  --accent:#F2B21F; --accent-ink:#0E1822; --fee:#6D8296; --pay:#8AA6C2; --tax:#B7CBDE; --keep:#F2B21F;
+  --focus:#7FB0FF; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.55 "Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:62rem;margin:0 auto;padding:2.5rem 1.25rem 3rem}
+h1{font:800 clamp(2rem,6vw,3.4rem)/1.04 "Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;margin:0 0 .75rem;max-width:18ch;letter-spacing:-.02em}
+.lede{color:var(--muted);max-width:46ch;margin:0 0 2rem}
+.grid{display:grid;gap:1.5rem;grid-template-columns:1fr}
+@media (min-width:52rem){.grid{grid-template-columns:minmax(0,5fr) minmax(0,6fr);align-items:start}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:.75rem;padding:1.25rem}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:.25rem;background:var(--bg);border:1px solid var(--line);border-radius:.6rem;padding:.25rem;margin-bottom:1.25rem}
+.seg button{font:inherit;font-weight:600;font-size:.9rem;color:var(--muted);background:transparent;border:0;border-radius:.4rem;padding:.55rem .5rem;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.field{display:flex;flex-direction:column;gap:.3rem}
+.field.full{grid-column:1/-1}
+.field label{font-size:.85rem;font-weight:600}
+.field input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:.6rem .7rem;width:100%;min-width:0}
+.field small{color:var(--muted);font-size:.78rem;line-height:1.35}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+[hidden]{display:none!important}
+.result .big{font:800 clamp(2.2rem,7vw,3.6rem)/1 "Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;letter-spacing:-.02em;margin:0}
+.result .sub{color:var(--muted);margin:.35rem 0 1.25rem}
+.bar{display:flex;height:1.1rem;border-radius:.3rem;overflow:hidden;background:var(--line);margin:.25rem 0 .5rem}
+.bar span{display:block;height:100%;transition:width .25s}
+.b1{background:var(--fee)}.b2{background:var(--pay)}.b3{background:var(--tax)}.b4{background:var(--keep)}
+.cents{font-weight:600;margin:0 0 1.25rem}
+.rows{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.rows li{display:flex;justify-content:space-between;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
+.rows li span:last-child{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.rows .total{font-weight:700}
+.rows .total span:last-child{background:var(--accent);color:var(--accent-ink);padding:0 .45rem;border-radius:.25rem}
+.dot{display:inline-block;width:.7rem;height:.7rem;border-radius:50%;margin-right:.5rem;vertical-align:baseline}
+h2{font:800 1.35rem/1.2 "Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;margin:2.5rem 0 .75rem}
+.tools{margin:0;padding:0;list-style:none;max-width:44rem}
+.tools li{padding:.7rem 0;border-bottom:1px solid var(--line)}
+.tools a{color:var(--ink);font-weight:600;text-underline-offset:.2em}
+.tools span{color:var(--muted)}
+.note{color:var(--muted);font-size:.85rem;max-width:56ch;margin-top:2rem}
+@media (prefers-reduced-motion:reduce){.bar span{transition:none}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>What you actually keep from a dollar job</h1>
+  <p class="lede">Paid in dollars, living on rupees? Enter your numbers to see what is left after platform fees, payout fees, tax and the exchange rate.</p>
+
+  <div class="grid">
+    <section class="panel" aria-label="Your numbers">
+      <div class="seg" role="group" aria-label="What do you want to work out?">
+        <button type="button" id="m-rate" aria-pressed="true">Hourly rate to monthly pay</button>
+        <button type="button" id="m-goal" aria-pressed="false">Monthly goal to hourly rate</button>
+      </div>
+      <div class="fields">
+        <div class="field full" id="f-rate">
+          <label for="rate">Your rate (US$ per hour)</label>
+          <input id="rate" type="number" inputmode="decimal" min="0" step="0.5" value="15">
+        </div>
+        <div class="field full" id="f-goal" hidden>
+          <label for="goal">Monthly goal (Rs take-home)</label>
+          <input id="goal" type="number" inputmode="numeric" min="0" step="1000" value="300000">
+        </div>
+        <div class="field">
+          <label for="hours">Billable hours per week</label>
+          <input id="hours" type="number" inputmode="decimal" min="0" step="1" value="20">
+        </div>
+        <div class="field">
+          <label for="weeks">Working weeks per month</label>
+          <input id="weeks" type="number" inputmode="decimal" min="0" step="0.5" value="4">
+        </div>
+        <div class="field">
+          <label for="plat">Platform fee (%)</label>
+          <input id="plat" type="number" inputmode="decimal" min="0" max="100" step="0.5" value="10">
+          <small>Check your platform’s current fee.</small>
+        </div>
+        <div class="field">
+          <label for="pay">Payout fee (%)</label>
+          <input id="pay" type="number" inputmode="decimal" min="0" max="100" step="0.5" value="2">
+          <small>Withdrawal or transfer costs.</small>
+        </div>
+        <div class="field">
+          <label for="tax">Tax set-aside (%)</label>
+          <input id="tax" type="number" inputmode="decimal" min="0" max="100" step="0.5" value="5">
+          <small>Ask an accountant for your rate.</small>
+        </div>
+        <div class="field">
+          <label for="fx">Rupees per US$1</label>
+          <input id="fx" type="number" inputmode="decimal" min="0" step="0.5" value="280">
+          <small>Use today’s rate from your bank.</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel result" aria-live="polite" aria-label="Your result">
+      <p class="big" id="big">Rs 0</p>
+      <p class="sub" id="sub"></p>
+      <div class="bar" role="img" aria-label="Where each billed dollar goes" id="bar">
+        <span class="b1" id="s1"></span><span class="b2" id="s2"></span><span class="b3" id="s3"></span><span class="b4" id="s4"></span>
+      </div>
+      <p class="cents" id="cents"></p>
+      <ul class="rows">
+        <li><span>Billed to clients</span><span id="r-gross"></span></li>
+        <li><span><i class="dot b1"></i>Platform fee</span><span id="r-plat"></span></li>
+        <li><span><i class="dot b2"></i>Payout fee</span><span id="r-pay"></span></li>
+        <li><span><i class="dot b3"></i>Tax set-aside</span><span id="r-tax"></span></li>
+        <li><span><i class="dot b4"></i>You keep</span><span id="r-keep"></span></li>
+        <li class="total"><span>Monthly take-home</span><span id="r-pkr"></span></li>
+        <li><span>Over twelve months</span><span id="r-year"></span></li>
+      </ul>
+    </section>
+  </div>
+
+  <h2>Tools freelancers use</h2>
+  <ul class="tools">
+    <li><a href="https://www.upwork.com" target="_blank" rel="noopener sponsored">Upwork</a> <span>for finding hourly and project clients.</span></li>
+    <li><a href="https://www.fiverr.com" target="_blank" rel="noopener sponsored">Fiverr</a> <span>for selling fixed-price services.</span></li>
+    <li><a href="https://www.payoneer.com" target="_blank" rel="noopener sponsored">Payoneer</a> <span>for receiving international payments.</span></li>
+    <li><a href="https://www.freecodecamp.org" target="_blank" rel="noopener">freeCodeCamp</a> <span>for learning to code at no cost.</span></li>
+  </ul>
+
+  <p class="note">These are estimates, not financial or tax advice. Platform fees, payout fees, tax rules and exchange rates change, so check each one before you rely on the result.</p>
+</main>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var n=function(id){var v=parseFloat($(id).value);return isFinite(v)&&v>0?v:0};
+  var mode="rate";
+  var usd=function(v){return "$"+v.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})};
+  var pkr=function(v){return "Rs "+Math.round(v).toLocaleString("en-US")};
+  function setMode(m){
+    mode=m;
+    $("m-rate").setAttribute("aria-pressed",m==="rate");
+    $("m-goal").setAttribute("aria-pressed",m==="goal");
+    $("f-rate").hidden=(m!=="rate");
+    $("f-goal").hidden=(m!=="goal");
+    calc();
+  }
+  function calc(){
+    var p=Math.min(n("plat"),100)/100, q=Math.min(n("pay"),100)/100, t=Math.min(n("tax"),100)/100;
+    var fx=n("fx"), monthHours=n("hours")*n("weeks");
+    var keepRatio=(1-p)*(1-q)*(1-t);
+    var rate=0;
+    if(mode==="rate"){rate=n("rate");}
+    else if(monthHours>0&&fx>0&&keepRatio>0){rate=n("goal")/(monthHours*fx*keepRatio);}
+    var gross=rate*monthHours;
+    var platAmt=gross*p, afterPlat=gross-platAmt;
+    var payAmt=afterPlat*q, afterPay=afterPlat-payAmt;
+    var taxAmt=afterPay*t, keep=afterPay-taxAmt;
+    var rupees=keep*fx;
+    if(mode==="rate"){
+      $("big").textContent=pkr(rupees)+" a month";
+      $("sub").textContent=monthHours>0?"From "+monthHours+" billable hours at $"+rate+" an hour.":"Enter your billable hours to see a result.";
+    }else{
+      $("big").textContent="$"+(Math.ceil(rate*100)/100).toFixed(2)+" an hour";
+      $("sub").textContent=monthHours>0&&keepRatio>0?"To take home "+pkr(n("goal"))+" a month from "+monthHours+" billable hours.":"Enter your billable hours to see a result.";
+    }
+    var w=function(v){return gross>0?(v/gross*100):0};
+    $("s1").style.width=w(platAmt)+"%";
+    $("s2").style.width=w(payAmt)+"%";
+    $("s3").style.width=w(taxAmt)+"%";
+    $("s4").style.width=w(keep)+"%";
+    $("cents").textContent="You keep "+Math.round(keepRatio*100)+"¢ of every $1 you bill.";
+    $("r-gross").textContent=usd(gross);
+    $("r-plat").textContent="−"+usd(platAmt);
+    $("r-pay").textContent="−"+usd(payAmt);
+    $("r-tax").textContent="−"+usd(taxAmt);
+    $("r-keep").textContent=usd(keep);
+    $("r-pkr").textContent=pkr(rupees);
+    $("r-year").textContent=pkr(rupees*12);
+  }
+  ["rate","goal","hours","weeks","plat","pay","tax","fx"].forEach(function(id){$(id).addEventListener("input",calc)});
+  $("m-rate").addEventListener("click",function(){setMode("rate")});
+  $("m-goal").addEventListener("click",function(){setMode("goal")});
+  calc();
+})();
+</script>
+</body>
+</html>
